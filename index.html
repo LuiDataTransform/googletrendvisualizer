@@ -261,11 +261,14 @@
             </div>
 
             <div id="instruction-banner" class="instruction-banner">
-                <h3>Fetching Data...</h3>
-                <p>Please wait while we fetch the latest trends from the server.</p>
+                <h3>Update Your Data</h3>
+                <p>This is a static visualization. To fetch the latest data for your selected keywords, run the following command in your terminal:</p>
                 <div class="code-block" id="terminal-command">
-                    Loading...
+                    python fetch_trends.py --keywords "Python,JavaScript"
                 </div>
+                <p style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-muted);">
+                    After the script completes successfully and updates <code>trends_data.json</code>, refresh this page, commit, and push.
+                </p>
             </div>
         </section>
 
@@ -305,8 +308,8 @@
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             renderKeywords();
-            // Load initial data from API
-            loadChartData(keywords);
+            // Load initial data from static JSON
+            loadChartData();
         });
 
         // --- Event Listeners ---
@@ -321,14 +324,13 @@
                 return;
             }
             
-            terminalCommandEl.textContent = `Fetching keywords: ${keywords.join(', ')}...`;
+            const keywordStr = keywords.join(',');
+            terminalCommandEl.textContent = `python fetch_trends.py --keywords "${keywordStr}"`;
             instructionBanner.classList.add('active');
             
-            loadChartData(keywords).then(() => {
-                setTimeout(() => {
-                    instructionBanner.classList.remove('active');
-                }, 2000);
-            });
+            setTimeout(() => {
+                instructionBanner.classList.remove('active');
+            }, 15000);
         });
 
         // --- Functions ---
@@ -386,20 +388,15 @@
         }
 
         // --- Data Loading and Charting ---
-        // Replace this URL with your production backend URL later (e.g., https://my-fastapi-app.onrender.com)
-        const API_BASE_URL = "http://localhost:8000";
-
-        async function loadChartData(keywordArray) {
+        async function loadChartData() {
             try {
                 hideError();
-                const keywordStr = encodeURIComponent(keywordArray.join(','));
                 
-                // Fetch the JSON from our FastAPI backend
-                const response = await fetch(`${API_BASE_URL}/api/trends?keywords=${keywordStr}`);
+                // Fetch the JSON generated locally
+                const response = await fetch('trends_data.json');
                 
                 if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.detail || `HTTP error! status: ${response.status}`);
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
                 const data = await response.json();
@@ -411,6 +408,10 @@
                 }
 
                 const availableKeywords = Object.keys(data[dates[0]]);
+                
+                // Update our UI keywords list based on what was actually fetched
+                keywords = [...availableKeywords];
+                renderKeywords();
                 
                 // Prepare datasets for Chart.js
                 const datasets = availableKeywords.map((kw, index) => {
@@ -432,7 +433,7 @@
 
             } catch (error) {
                 console.error("Failed to load chart data:", error);
-                showError(`Error loading data: ${error.message}`);
+                showError(`Error loading data: ${error.message}. Since this is hosted statically, you need to run fetch_trends.py and push trends_data.json to update it.`);
                 instructionBanner.classList.remove('active');
             }
         }
