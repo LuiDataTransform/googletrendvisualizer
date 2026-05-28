@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Trends Visualizer</title>
+    <!-- Load Chart.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --glass-blur: 12px;
+            --chart-colors: #3b82f6, #ef4444, #10b981, #f59e0b, #8b5cf6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        main {
+            flex: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Controls Section */
+        .controls-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-size: 1rem;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .keyword-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .keyword-tag {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .keyword-tag button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 0;
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .keyword-tag button:hover {
+            color: #ef4444;
+            transform: none;
+        }
+
+        /* Chart Section */
+        .chart-container {
+            position: relative;
+            height: 500px;
+            width: 100%;
+        }
+
+        /* Instruction Banner / Modal */
+        .instruction-banner {
+            display: none;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--accent-color);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            animation: slideDown 0.3s ease-out forwards;
+        }
+
+        .instruction-banner.active {
+            display: block;
+        }
+
+        .instruction-banner h3 {
+            color: var(--accent-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .code-block {
+            background: #000;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            color: #10b981;
+            margin-top: 0.5rem;
+            overflow-x: auto;
+        }
+        
+        .error-message {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .controls-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <header>
+            <h1>Google Trends Visualizer</h1>
+            <p>Analyze interest over time for your favorite topics</p>
+        </header>
+
+        <section class="glass-card">
+            <div class="controls-container">
+                <div class="input-group">
+                    <input type="text" id="keyword-input" placeholder="Enter keywords (e.g., Python, JavaScript)..." aria-label="Keywords input">
+                    <button id="add-keyword-btn">Add Keyword</button>
+                </div>
+                <button id="fetch-btn" class="btn-outline">Fetch & Visualize New Data</button>
+            </div>
+            
+            <div id="keyword-list" class="keyword-list">
+                <!-- Keyword tags will be injected here -->
+            </div>
+
+            <div id="instruction-banner" class="instruction-banner">
+                <h3>Fetching Data...</h3>
+                <p>Please wait while we fetch the latest trends from the server.</p>
+                <div class="code-block" id="terminal-command">
+                    Loading...
+                </div>
+            </div>
+        </section>
+
+        <section class="glass-card">
+            <div id="error-container" class="error-message"></div>
+            <div class="chart-container">
+                <canvas id="trendsChart"></canvas>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Built with Pytrends & Chart.js. Powered by a FastAPI backend.</p>
+    </footer>
+
+    <script>
+        // --- State Management ---
+        let keywords = ["Python", "JavaScript"];
+        let chartInstance = null;
+        const chartColors = [
+            '#3b82f6', // blue
+            '#ef4444', // red
+            '#10b981', // green
+            '#f59e0b', // yellow
+            '#8b5cf6'  // purple
+        ];
+
+        // --- DOM Elements ---
+        const keywordInput = document.getElementById('keyword-input');
+        const addKeywordBtn = document.getElementById('add-keyword-btn');
+        const keywordListEl = document.getElementById('keyword-list');
+        const fetchBtn = document.getElementById('fetch-btn');
+        const instructionBanner = document.getElementById('instruction-banner');
+        const terminalCommandEl = document.getElementById('terminal-command');
+        const errorContainer = document.getElementById('error-container');
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderKeywords();
+            // Load initial data from API
+            loadChartData(keywords);
+        });
+
+        // --- Event Listeners ---
+        addKeywordBtn.addEventListener('click', handleAddKeyword);
+        keywordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleAddKeyword();
+        });
+
+        fetchBtn.addEventListener('click', () => {
+            if (keywords.length === 0) {
+                showError("Please add at least one keyword first.");
+                return;
+            }
+            
+            terminalCommandEl.textContent = `Fetching keywords: ${keywords.join(', ')}...`;
+            instructionBanner.classList.add('active');
+            
+            loadChartData(keywords).then(() => {
+                setTimeout(() => {
+                    instructionBanner.classList.remove('active');
+                }, 2000);
+            });
+        });
+
+        // --- Functions ---
+        function handleAddKeyword() {
+            const rawVal = keywordInput.value.trim();
+            if (!rawVal) return;
+
+            // Handle comma-separated inputs
+            const newKeywords = rawVal.split(',').map(k => k.trim()).filter(k => k);
+            
+            let addedCount = 0;
+            for (const kw of newKeywords) {
+                if (keywords.length >= 5) {
+                    showError("Maximum of 5 keywords allowed by Google Trends.");
+                    break;
+                }
+                if (!keywords.includes(kw)) {
+                    keywords.push(kw);
+                    addedCount++;
+                }
+            }
+
+            if (addedCount > 0) {
+                keywordInput.value = '';
+                renderKeywords();
+                hideError();
+            }
+        }
+
+        function removeKeyword(kw) {
+            keywords = keywords.filter(k => k !== kw);
+            renderKeywords();
+        }
+
+        function renderKeywords() {
+            keywordListEl.innerHTML = '';
+            keywords.forEach((kw) => {
+                const tag = document.createElement('div');
+                tag.className = 'keyword-tag';
+                tag.innerHTML = `
+                    ${kw}
+                    <button onclick="removeKeyword('${kw}')" aria-label="Remove ${kw}">&times;</button>
+                `;
+                keywordListEl.appendChild(tag);
+            });
+        }
+
+        function showError(message) {
+            errorContainer.textContent = message;
+            errorContainer.style.display = 'block';
+        }
+
+        function hideError() {
+            errorContainer.style.display = 'none';
+        }
+
+        // --- Data Loading and Charting ---
+        // Replace this URL with your production backend URL later (e.g., https://my-fastapi-app.onrender.com)
+        const API_BASE_URL = "http://localhost:8000";
+
+        async function loadChartData(keywordArray) {
+            try {
+                hideError();
+                const keywordStr = encodeURIComponent(keywordArray.join(','));
+                
+                // Fetch the JSON from our FastAPI backend
+                const response = await fetch(`${API_BASE_URL}/api/trends?keywords=${keywordStr}`);
+                
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.detail || `HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                const dates = Object.keys(data).sort();
+                
+                if (dates.length === 0) {
+                    throw new Error("Data file is empty.");
+                }
+
+                const availableKeywords = Object.keys(data[dates[0]]);
+                
+                // Prepare datasets for Chart.js
+                const datasets = availableKeywords.map((kw, index) => {
+                    return {
+                        label: kw,
+                        data: dates.map(date => data[date][kw] || 0),
+                        borderColor: chartColors[index % chartColors.length],
+                        backgroundColor: chartColors[index % chartColors.length] + '20',
+                        borderWidth: 2,
+                        tension: 0.3, 
+                        pointRadius: 0,
+                        pointHitRadius: 10,
+                        pointHoverRadius: 5,
+                        fill: false
+                    };
+                });
+
+                renderChart(dates, datasets);
+
+            } catch (error) {
+                console.error("Failed to load chart data:", error);
+                showError(`Error loading data: ${error.message}`);
+                instructionBanner.classList.remove('active');
+            }
+        }
+
+        function renderChart(labels, datasets) {
+            const ctx = document.getElementById('trendsChart').getContext('2d');
+            
+            // Set Chart.js defaults for dark theme
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.font.family = "'Inter', sans-serif";
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#f8fafc',
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            titleColor: '#f8fafc',
+                            bodyColor: '#e2e8f0',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            padding: 10
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                maxTicksLimit: 10
+                            },
+                            title: {
+                                display: true,
+                                text: 'Date',
+                                color: '#94a3b8'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)',
+                                drawBorder: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Search Interest',
+                                color: '#94a3b8'
+                            },
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

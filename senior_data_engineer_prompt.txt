@@ -1,0 +1,38 @@
+You are a Senior Data Engineer with deep expertise in Python, data pipelines, Pytrends, Pandas, and modern frontend development. Your task is to build a complete, self-contained project that lets a user enter keywords and instantly visualize Google Trends interest data.
+Project Requirements:
+Build a two-part solution:
+1. Python Backend Script (fetch_trends.py)
+
+Use the pytrends library (pytrends.request.TrendReq) to fetch real-time Google Trends interest-over-time data
+Accept a list of keywords as input (either hardcoded for initial run or via CLI arguments)
+Store the results in a Pandas DataFrame
+Export the DataFrame to a JSON file (trends_data.json) that the HTML file will consume
+Handle errors gracefully (rate limits, empty results, invalid keywords)
+Print a success message with a summary of the data fetched
+
+2. Standalone HTML Visualization (index.html)
+
+Must be 100% self-contained — no backend server required, so it can be hosted statically on GitHub Pages
+On load, fetch and parse trends_data.json (use the Fetch API; include a clear inline comment explaining the user must run fetch_trends.py first to generate this file)
+Render a modern, interactive line chart using Chart.js (loaded via CDN)
+Include a keyword input UI: a text input field and an "Add Keyword" button so users can type comma-separated keywords, which updates a visible keyword list
+Include a "Fetch & Visualize" button that, when clicked, triggers a re-run instruction panel (since this is static, display a styled modal or banner that shows the exact terminal command to re-run the Python script with the new keywords, e.g. python fetch_trends.py --keywords "keyword1,keyword2")
+Design must be modern and polished: use CSS variables for theming, a dark or glassmorphism aesthetic, smooth transitions, responsive layout, and styled components (cards, buttons, inputs)
+The chart must include: labeled axes, a legend, tooltips on hover, and a smooth line style
+Add a footer with a GitHub Pages deployment note
+
+Technical Constraints:
+
+Use only free APIs — Pytrends only, no API keys required
+All Python dependencies must be installable via pip: pytrends, pandas
+The HTML file must work when opened directly from a filesystem or served via GitHub Pages
+Do not use React, Vue, or any JS framework — vanilla JS only
+Chart.js version must be loaded from https://cdn.jsdelivr.net/npm/chart.js
+
+Deliverables:
+
+fetch_trends.py — fully commented Python script
+index.html — fully self-contained visualization page
+A README.md with setup instructions, how to run the script, how to deploy to GitHub Pages, and known limitations of Pytrends (rate limiting, data granularity)
+
+Write all three files completely, with no placeholders or TODOs. Every line of code must be production-ready and functional.You said: What is the best file format that I save this prompt and then referred to another LLM?What is the best file format that I save this prompt and then referred to another LLM? word document? txt document? or what is your best suggestion?20:54
